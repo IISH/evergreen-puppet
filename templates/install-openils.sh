@@ -51,7 +51,7 @@ ldconfig
 make -f Open-ILS/src/extras/Makefile.install "${OSNAME}-developer"
 cd "${target}/Open-ILS/web/js/ui/default/staff"
 npm install
-
+sudo bower install --allow-root
 grunt all
 cd "$target"
 PATH=${SYSDIR}/bin:$PATH ./configure --prefix="$SYSDIR" --sysconfdir="${SYSDIR}/conf"

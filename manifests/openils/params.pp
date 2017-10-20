@@ -2,9 +2,9 @@ class evergreen::openils::params() {
   $user                   = 'opensrf'
   $password               = 'opensrf'
   $sysdir                 = '/openils'
-  $repository             = 'https://github.com/evergreen-library-system/Evergreen/archive/tags/rel_3_0_0.tar.gz'
-  $version                = '3.0.0'
-  $staff_client_stamp     = 'rel_3_0_0'
+  $repository             = 'https://github.com/evergreen-library-system/Evergreen/archive/tags/rel_2_12_6.tar.gz'
+  $version                = '2.12.6'
+  $staff_client_stamp     = 'rel_2_12_6'
   $apache_version         = '24'
   $apache_ssl_crt         = "/etc/ssl/certs/${::fqdn}.crt"
   $apache_ssl_key         = "/etc/ssl/private/${::fqdn}.key"
