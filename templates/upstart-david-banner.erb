@@ -1,0 +1,67 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          david-banner
+# Required-Start:    $local_fs $network $syslog $named
+# Required-Stop:     $local_fs $network $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     true
+# Short-Description: Start/stop david-banner
+# Description:       Start the david-banner deamon
+#  This script will start and stop david-banner.pl .
+### END INIT INFO
+
+DESC="david-banner deamon"
+NAME=david-banner.pl
+DAEMON=<%= sysdir %>/bin/support-scripts/david-banner/$NAME
+
+USER=<%= user %>
+SLEEP=<%= david_banner_sleep %>
+LOCKFILE=<%= david_banner_lockfile %>
+BOOTSTRAP=<%= sysdir %>/conf/opensrf_core.xml
+BASEURL=<%= david_banner_baseurl%>
+
+# sleep=interval: number of seconds to sleep between checks for new reports to run; defaults to 10
+# lockfile=filename: where to place the lockfile for the process; defaults to /tmp/enricher-LOCK
+# bootstrap=filename: OpenSRF bootstrap
+
+start() {
+    echo "Starting $DESC" "$NAME"
+    sudo -u $USER $DAEMON --daemon -sleep=$SLEEP -lockfile=$LOCKFILE -bootstrap=$BOOTSTRAP -baseurl=$BASEURL
+}
+
+stop() {
+    echo "Stopping $DESC" "$NAME"
+    r=$(ps wax | grep "David Banner" | grep -v grep | cut -b1-6)
+    if [ ! -z "$r" ] ; then
+        kill $r
+    fi
+    if [ -f $LOCKFILE ] ; then
+        rm $LOCKFILE
+    fi
+}
+
+restart() {
+    stop;
+    start;
+}
+
+case "$1" in
+  start)
+	start;
+	;;
+  stop)
+    stop;
+    ;;
+  restart)
+    restart;
+    ;;
+  *)
+	echo "Usage: service david-banner start|stop|restart" >&2
+	exit 3
+	;;
+esac
+
+
+
+exit 0

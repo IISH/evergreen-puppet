@@ -1,0 +1,7 @@
+<IfModule mpm_prefork_module>
+  StartServers           <%= apache_mpm_prefork_module_start_servers %>
+  MinSpareServers        <%= apache_mpm_prefork_module_min_spare_servers %>
+  MaxSpareServers        <%= apache_mpm_prefork_module_max_spare_servers %>
+  MaxRequestWorkers      <%= apache_mpm_prefork_module_max_requests_workers %>
+  MaxConnectionsPerChild <%= apache_mpm_prefork_module_max_connections_per_child %>
+</IfModule>

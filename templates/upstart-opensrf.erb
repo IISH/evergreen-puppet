@@ -1,0 +1,115 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          opensrf
+# Required-Start:    $local_fs $network $syslog $named
+# Required-Stop:     $local_fs $network $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     true
+# Short-Description: Start/stop OpenSRF
+# Description:       Start/stop OpenSRF using the --start-all, --restart-all, --status and --stop-all
+#  This script will start and stop openils .
+### END INIT INFO
+
+DESC="OpenSRF"
+NAME=opensrf-perl.pl
+DAEMON=<%= sysdir %>/bin/$NAME
+USER=<%= user %>
+
+start() {
+
+<% if @enable_ejabberd %>
+    echo "Starting ejabberd"
+    /etc/init.d/ejabberd restart
+    sleep 5
+    <% @register.each do |name, account| -%>
+        echo "Registering <%= name%>"
+        /usr/sbin/ejabberdctl unregister "<%= account['username'] %>" "<%= account['host'] %>"
+        /usr/sbin/ejabberdctl register "<%= account['username'] %>" "<%= account['host'] %>" "<%= account['password'] %>"
+    <% end -%>
+<% end %>
+
+
+<% if @enable_memcached %>
+    echo "Starting memcached"
+    /etc/init.d/memcached restart
+<% end %>
+
+    echo "Starting $DESC" "$NAME"
+    sudo -u $USER /bin/bash -c "PATH=${PATH}:<%= sysdir %>/bin $DAEMON --start --service router"
+}
+
+stop() {
+    echo "Stopping $DESC" "$NAME"
+    sudo -u $USER /bin/bash -c "PATH=${PATH}:<%= sysdir %>/bin $DAEMON --stop --service router"
+
+    # Ensure we do not have any stale Routers. This is similar as with the --kill-with-fire flag in osrf_control
+    pids=$(ps ax | grep "OpenSRF Router" | grep -v grep | sed 's/^\s*//' | cut -d' ' -f1)
+    for pid in $pids; do
+        echo "Forcefully killing Router ${pid}"
+        kill -9 $pid
+    done
+
+<% if @enable_memcached %>
+    echo "Shutdown memcached"
+    /etc/init.d/memcached stop
+<% end %>
+
+<% if @enable_ejabberd %>
+    echo "Shutdown ejabberd"
+    /etc/init.d/ejabberd stop
+<% end %>
+}
+
+restart() {
+    echo "Stopping $DESC" "$NAME"
+    stop;
+    start;
+}
+
+status() {
+    # Look for the public and private router pid values
+    online=0
+
+    f=<%= sysdir %>/var/run/opensrf/router.pid
+    if [ -f $f ] ; then
+        while read pid
+        do
+            p=$(ps -p $pid)
+            p=$(echo $p | cut -d ' ' -f 8)
+            if [ "$p" = "opensrf_router" ] ; then
+                online=`expr $online + 1`
+            fi
+        done < /openils/var/run/opensrf/router.pid
+    fi
+
+    if [ $online -eq 2 ]; then
+        echo "$DESC" "$NAME" " is running."
+        exit 0
+    else
+        echo "$DESC" "$NAME" " is not running."
+        exit 3
+    fi
+}
+
+
+case "$1" in
+  start)
+    start;
+    ;;
+  stop)
+    stop;
+    ;;
+  restart)
+    restart;
+    ;;
+  status)
+    status;
+    ;;
+  *)
+    echo "Usage: OpenSRF start|stop|restart|status" >&2
+    exit 3
+    ;;
+esac
+
+exit 0

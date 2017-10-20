@@ -1,0 +1,87 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          openils
+# Required-Start:    $local_fs $network $syslog $named
+# Required-Stop:     $local_fs $network $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     true
+# Short-Description: Start/stop OpenILS
+# Description:       Start/stop OpenILS using the --start-all, --restart-all, --status and --stop-all
+#  This script will start and stop openils .
+### END INIT INFO
+
+DESC="OpenILS"
+NAME=opensrf-perl.pl
+DAEMON=<%= sysdir %>/bin/$NAME
+USER=<%= user %>
+
+start() {
+    echo "Starting $DESC" "$NAME"
+    sudo -u $USER /bin/bash -c "PATH=${PATH}:<%= sysdir %>/bin $DAEMON --start-services"
+    if [ $? = 0 ] ; then
+        <% @co_service.each do |service| -%>
+        /etc/init.d/<%= service %> start
+        <% end -%>
+    fi
+
+    sudo -u $USER /openils/bin/autogen.sh
+}
+
+stop() {
+    echo "Stopping $DESC" "$NAME"
+    <% @co_service.each do |service| -%>
+		/etc/init.d/<%= service %> stop
+    <% end -%>
+    sudo -u $USER /bin/bash -c "PATH=${PATH}:<%= sysdir %>/bin $DAEMON --stop-services"
+
+    # Ensure we do not have any stale Listeners or Drones. This is similar as with the --kill-with-fire flag in osrf_control
+    pids=$(ps ax | grep "OpenSRF Listener" | grep -v grep | sed 's/^\s*//' | cut -d' ' -f1)
+    for pid in $pids; do
+        echo "Forcefully killing Listener ${pid}"
+        kill -9 $pid
+    done
+    pids=$(ps ax | grep "OpenSRF Drone" | grep -v grep | sed 's/^\s*//' | cut -d' ' -f1)
+    for pid in $pids; do
+        echo "Forcefully killing Drone ${pid}"
+        kill -9 $pid
+    done
+}
+
+restart() {
+    echo "Stopping $DESC" "$NAME"
+    stop;
+    start;
+}
+
+status() {
+    perl <%= monitor_path %>
+    if [ $? = 0 ] ; then
+        echo "$DESC" "$NAME" " is running."
+        exit 0
+    else
+        echo "$DESC" "$NAME" " is not running."
+        exit 3
+    fi
+}
+
+case "$1" in
+  start)
+	start;
+	;;
+  stop)
+    stop;
+    ;;
+  restart)
+    restart;
+    ;;
+  status)
+    status;
+    ;;
+  *)
+	echo "Usage: OpenILS start|stop|restart|status" >&2
+	exit 3
+	;;
+esac
+
+exit 0

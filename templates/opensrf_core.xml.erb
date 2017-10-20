@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+<!--
+OpenSRF bootstrap configuration file for Evergreen. Set by Puppet. Do not alter manually. Your changes will be lost.
+a. `<config><opensrf>` = use the private Jabber `opensrf` user
+    b. `<config><gateway>` = use the public Jabber `opensrf` user
+    c. `<config><routers><router>` = use the public Jabber `router` user
+    d. `<config><routers><router>` = use the private Jabber `router` user
+-->
+<config>
+    <!-- Options for <loglevel>: 0 None, 1 Error, 2 Warning, 3 Info, 4 debug -->
+    <opensrf>
+
+        <routers>
+
+            <!-- define the list of routers our services will register with -->
+            <router>
+                <!--
+                  This is the public router.  On this router, we only register
+                  applications which should be accessible to everyone on the OpenSRF
+                  network
+                -->
+                <name>router</name>
+                <domain><%= public_hosts %></domain>
+
+                <services>
+                <% @router_services.each do |activeapp| -%><% if @activeapps.include?(activeapp) %><service><%= activeapp %></service><% end %><% end -%>
+                </services>
+            </router>
+
+            <router>
+        <!--
+          This is the private router.  All applications must register with 
+          this router, so no explicit <services> section is required
+        -->
+                <name>router</name>
+        <domain><%= private_hosts %></domain>
+            </router>
+        </routers>
+
+        <!-- Our domain should match that of the private router -->
+    <domain><%= private_hosts %></domain>
+    <username><%= opensrf_user %></username>
+    <passwd><%= opensrf_password %></passwd>
+    <port>5222</port>
+
+    <!-- 
+      Name of the router used on our private domain.  
+      This should match one of the <name> of the private router above.
+     -->
+    <router_name>router</router_name>
+
+    <logfile><%= sysdir %>/var/log/osrfsys.log</logfile>
+    <!--
+      <logfile>syslog</logfile>
+      <syslog>local0</syslog>
+      <actlog>local1</actlog>
+     -->
+    <loglevel>3</loglevel>
+    <settings_config><%= sysdir %>/conf/opensrf.xml</settings_config>
+  </opensrf>
+  <!-- 
+    The section between <gateway>...</gateway> is a standard OpenSRF C
+    stack configuration file
+  -->
+  <gateway>
+    <client>true</client>
+    <router_name>router</router_name>
+
+    <!-- The gateway connects to the public domain for security -->
+    <domain><%= public_hosts %></domain>
+
+    <!-- This section will be soon deprecated for multi-domain mode... -->
+    <services>
+        <% @gateway_services.each do |activeapp| -%><% if @activeapps.include?(activeapp) %><service><%= activeapp %></service><% end %><% end -%>
+    </services>
+
+    <!-- jabber login info -->
+    <username><%= opensrf_user %></username>
+    <passwd><%= opensrf_password %></passwd>
+    <port>5222</port>
+    <loglevel>3</loglevel>
+    <logfile><%= sysdir %>/var/log/gateway.log</logfile>
+
+  </gateway>
+  <!-- ======================================================================================== -->
+  <routers>
+    <router>
+      <!-- public router -->
+      <trusted_domains>
+        <!-- 
+          Allow private services to register with this router 
+          and public client to send requests to this router. 
+        -->
+        <server><%= private_hosts %></server>
+        <!-- 
+          Also allow private clients to send to the router so it
+          can receive error messages
+        -->
+                <client><%= private_hosts %></client>
+                <client><%= public_hosts %></client>
+        
+            </trusted_domains>
+ 
+      <transport>
+                <server><%= public_hosts %></server>
+        <port>5222</port>
+                <unixpath><%= sysdir %>/var/sock/unix_sock</unixpath>
+        <username>router</username>
+                <password><%= router_password %></password>
+        <resource>router</resource>
+        <connect_timeout>10</connect_timeout>
+        <max_reconnect_attempts>5</max_reconnect_attempts>
+      </transport>
+            <logfile><%= sysdir %>/var/log/public-router.log</logfile>
+      <!--
+        <logfile>syslog</logfile>
+        <syslog>local2</syslog>
+      -->
+      <loglevel>2</loglevel>
+    </router>
+    <router>
+      <!-- private router -->
+      <trusted_domains>
+                <server><%= private_hosts %></server>
+        <!--
+          Only clients on the private domain can send requests to this router
+         -->
+        <client><%= private_hosts %></client>
+      </trusted_domains>
+      <transport>
+                <server><%= private_hosts %></server>
+        <port>5222</port>
+        <username>router</username>
+                <password><%= router_password %></password>
+        <resource>router</resource>
+        <connect_timeout>10</connect_timeout>
+        <max_reconnect_attempts>5</max_reconnect_attempts>
+      </transport>
+            <logfile><%= sysdir %>/var/log/private-router.log</logfile>
+      <!--
+        <logfile>syslog</logfile>
+        <syslog>local2</syslog>
+      -->
+      <loglevel>2</loglevel>
+    </router>
+  </routers>
+  <!-- ======================================================================================== -->
+
+  <!-- Any methods which match any of these match_string node values will     
+       have their params redacted from lower-level input logging.             
+       Adjust these examples as needed. -->      
+  <shared>
+    <log_protect>
+    <% @log_protect.each do |match_string|
+        _app = match_string.split(/\./)
+        app = _app[0] << "." << _app[1]
+        if @activeapps.include?(app) %><match_string><%= match_string %></match_string><% end %>
+      <% end -%>
+    </log_protect>
+  </shared>
+</config>

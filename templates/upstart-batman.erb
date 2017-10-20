@@ -1,0 +1,67 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          batman
+# Required-Start:    $local_fs $network $syslog $named
+# Required-Stop:     $local_fs $network $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Interactive:     true
+# Short-Description: Start/stop batman
+# Description:       Start the batman deamon
+#  This script will start and stop batman.pl .
+### END INIT INFO
+
+DESC="batman deamon"
+NAME=batman.pl
+DAEMON=<%= sysdir %>/bin/support-scripts/batman/$NAME
+
+USER=<%= user %>
+SLEEP=<%= batman_sleep %>
+LOCKFILE=<%= batman_lockfile %>
+CONCURRENCY=<%= batman_concurrency %>
+BOOTSTRAP=<%= sysdir %>/conf/opensrf_core.xml
+
+# sleep=interval: number of seconds to sleep between checks for new reports to run; defaults to 10
+# lockfile=filename: where to place the lockfile for the process; defaults to /tmp/batch-LOCK
+# bootstrap=filename: OpenSRF bootstrap
+
+start() {
+    echo "Starting $DESC" "$NAME"
+    sudo -u $USER $DAEMON --daemon -sleep=$SLEEP -lockfile=$LOCKFILE -concurrency=$CONCURRENCY -bootstrap=$BOOTSTRAP
+}
+
+stop() {
+    echo "Stopping $DESC" "$NAME"
+    r=$(ps wax | grep "Batman" | grep -v grep | cut -b1-6)
+    if [ ! -z "$r" ] ; then
+        kill $r
+    fi
+    if [ -f $LOCKFILE ] ; then
+        rm $LOCKFILE
+    fi
+}
+
+restart() {
+    stop;
+    start;
+}
+
+case "$1" in
+  start)
+	start;
+	;;
+  stop)
+    stop;
+    ;;
+  restart)
+    restart;
+    ;;
+  *)
+	echo "Usage: service batman start|stop|restart" >&2
+	exit 3
+	;;
+esac
+
+
+
+exit 0

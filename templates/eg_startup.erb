@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+use OpenSRF::AppSession;
+
+# default ingress value for all Apache/mod_perl clients
+OpenSRF::AppSession->ingress('apache');
+
+use OpenILS::WWW::BatchUpdate qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::BatchEnrich qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::OAI qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::Archive qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::Exporter qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::SuperCat qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::AddedContent qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::Proxy ('<%= sysdir %>/conf/opensrf_core.xml');
+use OpenILS::WWW::Vandelay qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::TemplateBatchBibUpdate qw( <%= sysdir %>/conf/opensrf_core.xml );
+use OpenILS::WWW::EGWeb ('<%= sysdir %>/conf/opensrf_core.xml', 'OpenILS::WWW::EGCatLoader', 'en_us');;
+use OpenILS::WWW::IDL2js ('<%= sysdir %>/conf/opensrf_core.xml');
+use OpenILS::WWW::FlatFielder;
+use OpenILS::WWW::PhoneList ('<%= sysdir %>/conf/opensrf_core.xml');
+
+# - Uncomment the following 2 lines to make use of the IP redirection code
+# - The IP file should to contain a map with the following format:
+# - actor.org_unit.shortname <start_ip> <end_ip>
+    # - e.g.  LIB123 10.0.0.1 10.0.0.254
+
+    #use OpenILS::WWW::Redirect qw(<%= sysdir %>/conf/opensrf_core.xml);
+    #OpenILS::WWW::Redirect->parse_ips_file('<%= sysdir %>/conf/lib_ips.txt');
+
+
+
+    1;
